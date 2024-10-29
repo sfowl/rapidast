@@ -1,13 +1,15 @@
-import os
 import json
+import os
 import re
 import shutil
 import tempfile
 
 import certifi
 import pytest
-
-from kubernetes import client, config, watch, utils
+from kubernetes import client
+from kubernetes import config
+from kubernetes import utils
+from kubernetes import watch
 
 NAMESPACE = os.getenv("NAMESPACE", "rapidast--pipeline")
 RAPIDAST_IMAGE = os.getenv("RAPIDAST_IMAGE", "quay.io/redhatproductsecurity/rapidast:latest")
@@ -23,14 +25,14 @@ def where():
 certifi.where = where
 
 
-@pytest.fixture(scope="module", autouse=True)
-def kclient():
+@pytest.fixture(name="kclient")
+def fixture_kclient():
     config.load_config()
     yield client.ApiClient()
 
 
-@pytest.fixture(scope="module")
-def corev1():
+@pytest.fixture(name="kclient")
+def fixture_corev1():
     yield client.CoreV1Api()
 
 
@@ -43,14 +45,14 @@ def wait_until_ready(**kwargs):
         print(event["object"].metadata.name, event["object"].status.phase)
         if event["object"].status.phase == "Running":
             return
-    raise Exception("Timeout out waiting for pod matching: {kwargs}")
+    raise RuntimeError("Timeout out waiting for pod matching: {kwargs}")
 
 
 # simulates: $ oc logs -f <pod> | tee <file>
 def tee_log(pod_name: str, filename: str):
     corev1 = client.CoreV1Api()
     w = watch.Watch()
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         for e in w.stream(corev1.read_namespaced_pod_log, name=pod_name, namespace=NAMESPACE):
             if not isinstance(e, str):
                 continue  # Watch.stream() can yield non-string types
@@ -62,10 +64,10 @@ def render_manifests(input_dir, output_dir):
     shutil.copytree(input_dir, output_dir, dirs_exist_ok=True)
     print(f"rendering manifests in {output_dir}")
     for filepath in os.scandir(output_dir):
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             contents = f.read()
         contents = contents.replace("${IMAGE}", RAPIDAST_IMAGE)
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(contents)
 
 
@@ -105,7 +107,7 @@ class TestRapiDAST:
         tee_log("rapidast-vapi", logfile)
 
         # XXX relies on rapidast-vapi pod cat-ing the result json file after execution
-        with open(logfile, "r") as f:
+        with open(logfile, "r", encoding="utf-8") as f:
             logs = f.read()
             pattern = r"^{\s*$.*$"
             matches = re.findall(pattern, logs, re.MULTILINE | re.DOTALL)
@@ -123,7 +125,7 @@ class TestRapiDAST:
         tee_log("rapidast-trivy", logfile)
 
         expected_line = "INFO:scanner: 'generic_trivy' completed successfully"
-        with open(logfile, "r") as f:
+        with open(logfile, "r", encoding="utf-8") as f:
             logs = f.read()
             assert expected_line in logs, f"{logfile} does not contain expected line: {expected_line}"
 
@@ -139,6 +141,6 @@ class TestRapiDAST:
         tee_log("rapidast-oobtkube", logfile)
 
         expected_line = "RESULT: OOB REQUEST DETECTED"
-        with open(logfile, "r") as f:
+        with open(logfile, "r", encoding="utf-8") as f:
             logs = f.read()
             assert expected_line in logs, f"{logfile} does not contain expected line: {expected_line}"

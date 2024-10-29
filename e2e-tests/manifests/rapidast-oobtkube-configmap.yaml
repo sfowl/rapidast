@@ -24,7 +24,7 @@ data:
   # XXX using tekton Task because it has:
   # - a resource type that has a .spec field (required by oobtkube script)
   # - fields in .spec that are arbitrary string (.spec.description)
-  # this could be replaced later with something more common like a ConfigMap, 
+  # this could be replaced later with something more common like a ConfigMap,
   # once oobtkube can test non .spec values
   cr_example.yaml: |+
     apiVersion: tekton.dev/v1
