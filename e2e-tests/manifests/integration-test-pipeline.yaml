@@ -17,7 +17,7 @@ spec:
           '{
             "components": [
               {
-                "name":"rapidast", 
+                "name":"rapidast",
                 "containerImage": "quay.io/redhatproductsecurity/rapidast:latest",
                 "source":{
                   "git":{
@@ -80,7 +80,7 @@ spec:
   #             value: $(params.repo_url)
   #           - name: revision
   #             value: $(params.revision)
-  # 
+  #
   #       - name: run-tests
   #         runAfter:
   #           - fetch-repository
