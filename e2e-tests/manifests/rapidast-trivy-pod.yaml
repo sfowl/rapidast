@@ -17,12 +17,15 @@ spec:
     name: rapidast-trivy
     resources:
       limits:
-        cpu: 0.5
+        cpu: 500m
         memory: 1Gi
+      requests:
+        cpu: 125m
+        memory: 256Mi
     volumeMounts:
     - name: config-volume
       mountPath: /opt/rapidast/config
-  serviceAccountName: ${SECRET} # trivy needs perms to query API server
+  serviceAccountName: ${SERVICEACCOUNT} # trivy needs perms to query API server
   securityContext:
     supplementalGroups: [1000] # "dast" group, necessary to write to /opt/rapidast/results if no PVC mounted
   volumes:

@@ -142,6 +142,9 @@ spec:
         volumes:
           - name: credentials
             emptyDir: {}
+        results:
+          - name: TEST_RESULTS
+            description: e2e test results
         steps:
           # - name: get-kubeconfig
           #   ref:
@@ -170,7 +173,9 @@ spec:
               git config --global --add safe.directory /workspace
               git clone "$(tasks.parse-metadata.results.source-git-url)" /workspace
               pushd /workspace
-              git checkout "$(tasks.parse-metadata.results.source-git-revision)"
+              # git checkout "$(tasks.parse-metadata.results.source-git-revision)"
+              # XXX Temporary hardcoded repo + commit !
+              git checkout test-e2e-test
 
           - name: test
             image: registry.redhat.io/openshift4/ose-cli:latest
@@ -186,25 +191,21 @@ spec:
             - name: RAPIDAST_CLEANUP
               value: "false" # namespace will be cleanedup automatically
             - name: RAPIDAST_IMAGE
-              value: $(results.tasks.parse-metadata.component-container-image)
-            - name: RAPIDAST_SECRETREF
-              value: pipeline
+              value: $(tasks.parse-metadata.results.component-container-image)
+            - name: RAPIDAST_SERVICEACCOUNT
+              value: namespace-manager # created by provision-env-with-ephemeral-namespace
             workingDir: /workspace
             volumeMounts:
               - name: credentials
                 mountPath: /credentials
             script: |
-              #!/bin/bash
+              #!/bin/bash -ex
               
               echo "$KUBECONFIG_VALUE" > "$KUBECONFIG"
-              cat "$KUBECONFIG"
-
               oc whoami
-              oc get pods
-              oc project
 
-              pwd
               yum install -y python3.12
               python3.12 -m ensurepip
               pip3 install -r requirements.txt -r requirements-dev.txt
-              pytest -s e2e-tests
+              pytest -s e2e-tests --json-report --json-report-summary --json-report-file $(results.TEST_RESULTS.path)
+              cat $(results.TEST_RESULTS.path)

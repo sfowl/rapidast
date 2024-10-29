@@ -31,4 +31,4 @@ spec:
         image: registry.redhat.io/openshift4/ose-cli:latest
         imagePullPolicy: Always
         name: task-controller
-      serviceAccountName: pipeline # required to read Tasks from API server
+      serviceAccountName: ${SERVICEACCOUNT} # required to read Tasks from API server

@@ -13,8 +13,8 @@ from kubernetes import watch
 from kubernetes.client.rest import ApiException
 
 NAMESPACE = os.getenv("RAPIDAST_NAMESPACE", "")  # e.g. rapidast--pipeline
+SERVICEACCOUNT = os.getenv("RAPIDAST_SERVICEACCOUNT", "pipeline")  # name of ServiceAccount used in rapidast pod
 RAPIDAST_IMAGE = os.getenv("RAPIDAST_IMAGE", "quay.io/redhatproductsecurity/rapidast:latest")
-RAPIDAST_SECRETREF = os.getenv("RAPIDAST_SECRETREF", "pipeline")  # name of Secret used in rapidast pod
 # delete resources created by tests
 RAPIDAST_CLEANUP = os.getenv("RAPIDAST_CLEANUP", "True").lower() in ("true", "1", "t", "y", "yes")
 
@@ -67,7 +67,7 @@ def render_manifests(input_dir, output_dir):
         with open(filepath, "r", encoding="utf-8") as f:
             contents = f.read()
         contents = contents.replace("${IMAGE}", RAPIDAST_IMAGE)
-        contents = contents.replace("${SECRET}", RAPIDAST_SECRETREF)
+        contents = contents.replace("${SERVICEACCOUNT}", SERVICEACCOUNT)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(contents)
 
