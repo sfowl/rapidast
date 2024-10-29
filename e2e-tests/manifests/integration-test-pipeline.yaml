@@ -1,0 +1,104 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: rapidast-e2e
+spec:
+  params:
+    - name: repo_url
+      value: github.com/sfowl/rapidast
+    - name: revision
+      value: "development"
+    - name: image
+      value: quay.io/redhatproductsecurity/rapidast:latest
+    - description: 'Snapshot of the application'
+      name: SNAPSHOT
+      default: |-
+          '{
+            "components": [
+              {
+                "name":"rapidast", 
+                "containerImage": "quay.io/redhatproductsecurity/rapidast:latest",
+                "source":{
+                  "git":{
+                    "url":"git@github.com:sfowl/rapidast.git",
+                    "revision":"development",
+                  }
+                }
+              }
+            ]
+          }'
+      type: string
+
+  tasks:
+    - name: task-1
+      description: Placeholder task that prints the Snapshot and outputs standard TEST_OUTPUT
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
+      taskSpec:
+        params:
+        - name: SNAPSHOT
+        results:
+        - name: TEST_OUTPUT
+          description: Test output
+        steps:
+        - image: registry.redhat.io/openshift4/ose-cli:latest
+          env:
+          - name: SNAPSHOT
+            value: $(params.SNAPSHOT)
+          script: |
+            dnf -y install jq
+            echo -e "Example test task for the Snapshot:\n ${SNAPSHOT}"
+            # Run custom tests for the given Snapshot here
+            # After the tests finish, record the overall result in the RESULT variable
+            RESULT="SUCCESS"
+
+            # Output the standardized TEST_OUTPUT result in JSON form
+            TEST_OUTPUT=$(jq -rc --arg date $(date -u --iso-8601=seconds) --arg RESULT "${RESULT}" --null-input \
+              '{result: $RESULT, timestamp: $date, failures: 0, successes: 1, warnings: 0}')
+            echo -n "${TEST_OUTPUT}" | tee $(results.TEST_OUTPUT.path)
+  #   pipelineSpec:
+  #     params:
+  #       - name: repo_url
+  #       - name: revision
+  #       - name: SNAPSHOT
+  #         value: $(params.SNAPSHOT)
+  #     workspaces:
+  #       - name: source
+  #     tasks:
+  #       - name: fetch-repository
+  #         taskRef:
+  #           name: git-clone
+  #         workspaces:
+  #           - name: output
+  #             workspace: source
+  #           - name: ssl-ca-directory
+  #             workspace: redhat-ca-directory
+  #         params:
+  #           - name: url
+  #             value: $(params.repo_url)
+  #           - name: revision
+  #             value: $(params.revision)
+  # 
+  #       - name: run-tests
+  #         runAfter:
+  #           - fetch-repository
+  #         workspaces:
+  #           - name: source
+  #             workspace: source
+  #         taskSpec:
+  #           workspaces:
+  #             - name: source
+  #           steps:
+  #             - name: run-tests
+  #               image: registry.redhat.io/openshift4/ose-cli:latest
+  #               workingDir: $(workspaces.source.path)
+  #               env:
+  #               - name: RAPIDAST_IMAGE
+  #                 value: $(params.image)
+  #               script: |
+  #                 yum install -y python3.12
+  #                 python3.12 -m ensurepip
+  #                 pip3 install -r requirements.txt
+  #                 pytest -s e2e-tests
