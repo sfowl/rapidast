@@ -51,7 +51,9 @@ spec:
             dnf -y install jq
             echo -e "Example test task for the Snapshot:\n ${SNAPSHOT}"
 
+            echo "checking oc.."
             oc get pods
+            oc whoami
             # Run custom tests for the given Snapshot here
             # After the tests finish, record the overall result in the RESULT variable
             RESULT="SUCCESS"
