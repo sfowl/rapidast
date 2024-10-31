@@ -121,7 +121,7 @@ spec:
     - name: run-e2e-tests
       runAfter:
         - provision-cluster
-      spec:
+      taskSpec:
         params:
           - name: namespace
             value: "$(params.NAMESPACE)"
