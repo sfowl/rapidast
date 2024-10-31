@@ -130,7 +130,6 @@ spec:
           value: "$(tasks.parse-metadata.results.source-git-revision)"
       taskRef:
         name: git-clone
-        version: "0.1"
       workspaces:
       - name: output
         workspace: source
