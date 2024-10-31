@@ -121,10 +121,13 @@ spec:
     - name: run-e2e-tests
       runAfter:
         - provision-cluster
+      params:
+        - name: namespace
+          value: "$(params.NAMESPACE)"
       taskSpec:
         params:
           - name: namespace
-            value: "$(params.NAMESPACE)"
+            type: string
         volumes:
           - name: credentials
             emptyDir: {}
