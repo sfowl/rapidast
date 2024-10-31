@@ -140,7 +140,6 @@ spec:
     - name: run-e2e-tests
       runAfter:
         - provision-cluster
-        - clone-repository
       params:
         - name: namespace
           value: "$(params.NAMESPACE)"
