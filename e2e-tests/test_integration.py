@@ -10,6 +10,7 @@ from kubernetes import client
 from kubernetes import config
 from kubernetes import utils
 from kubernetes import watch
+from kubernetes.client.rest import ApiException
 
 NAMESPACE = os.getenv("NAMESPACE", "rapidast--pipeline")
 RAPIDAST_IMAGE = os.getenv("RAPIDAST_IMAGE", "quay.io/redhatproductsecurity/rapidast:latest")
@@ -71,12 +72,30 @@ def render_manifests(input_dir, output_dir):
             f.write(contents)
 
 
+def create_namespace(namespace_name: str):
+    config.load_kube_config()
+    corev1 = client.CoreV1Api()
+    try:
+        corev1.read_namespace(namespace_name)
+        print(f"namespace {namespace_name} already exists")
+    except ApiException as e:
+        if e.status == 404:
+            print(f"creating namespace {namespace_name}")
+            namespace = client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace_name))
+            corev1.create_namespace(namespace)
+        else:
+            raise e
+    except Exception as e:
+        print(f"error reading namesapce {namespace_name}: {e}")
+
+
 class TestRapiDAST:
     @classmethod
     def setup_class(cls):
         cls.tempdir = tempfile.mkdtemp()
         render_manifests(MANIFESTS, cls.tempdir)
         print(f"testing with image: {RAPIDAST_IMAGE}")
+        create_namespace(NAMESPACE)
         os.system(f"kubectl delete -f {MANIFESTS}/")
         # XXX oobtukbe does not clean up after itself
         os.system("kubectl delete Task/vulnerable")
