@@ -199,6 +199,7 @@ spec:
               oc get ns $(params.namespace)
 
               pwd
-              python3 -m ensurepip
-              pip install -r requirements.txt -r requirements-dev.txt
-              pytest -v e2e-tests
+              yum install -y python3.12
+              python3.12 -m ensurepip
+              pip3 install -r requirements.txt -r requirements-dev.txt
+              pytest -s e2e-tests
