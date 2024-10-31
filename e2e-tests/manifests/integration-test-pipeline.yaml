@@ -121,41 +121,42 @@ spec:
     - name: run-e2e-tests
       runAfter:
         - provision-cluster
-      params:
-        - name: namespace
-          value: "$(params.NAMESPACE)"
-      volumes:
-        - name: credentials
-          emptyDir: {}
-      steps:
-        - name: get-kubeconfig
-          ref:
-            resolver: git
+      spec:
+        params:
+          - name: namespace
+            value: "$(params.NAMESPACE)"
+        volumes:
+          - name: credentials
+            emptyDir: {}
+        steps:
+          - name: get-kubeconfig
+            ref:
+              resolver: git
+              params:
+                - name: url
+                  value: https://github.com/konflux-ci/build-definitions.git
+                - name: revision
+                  value: main
+                - name: pathInRepo
+                  value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
             params:
-              - name: url
-                value: https://github.com/konflux-ci/build-definitions.git
-              - name: revision
-                value: main
-              - name: pathInRepo
-                value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-          params:
-            - name: eaasSpaceSecretRef
-              value: $(tasks.provision-eaas-space.results.secretRef)
-            - name: clusterName
-              value: "$(tasks.provision-cluster.results.clusterName)"
-            - name: credentials
-              value: credentials
-        - name: test
-          image: registry.redhat.io/openshift4/ose-cli:latest
-          env:
-          - name: KUBECONFIG
-            value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
-          volumeMounts:
-            - name: credentials
-              mountPath: /credentials
-          script: |
-            #!/bin/bash
-            
-            oc whoami
-            oc get pods
-            oc get ns $(params.namespace)
+              - name: eaasSpaceSecretRef
+                value: $(tasks.provision-eaas-space.results.secretRef)
+              - name: clusterName
+                value: "$(tasks.provision-cluster.results.clusterName)"
+              - name: credentials
+                value: credentials
+          - name: test
+            image: registry.redhat.io/openshift4/ose-cli:latest
+            env:
+            - name: KUBECONFIG
+              value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+            volumeMounts:
+              - name: credentials
+                mountPath: /credentials
+            script: |
+              #!/bin/bash
+              
+              oc whoami
+              oc get pods
+              oc get ns $(params.namespace)
