@@ -120,19 +120,22 @@ spec:
               - name: version
                 value: "$(steps.pick-version.results.version)"
 
-    - name: clone-repository
-      runAfter:
-        - parse-metadata
-      params:
-        - name: url
-          value: "$(tasks.parse-metadata.results.source-git-url)"
-        - name: revision
-          value: "$(tasks.parse-metadata.results.source-git-revision)"
-      taskRef:
-        name: git-clone
-      workspaces:
-      - name: output
-        workspace: source
+    # XXX not supported to use workspaces in integration tests:
+    # * https://issues.redhat.com/browse/STONEINTG-895
+    #
+    # - name: clone-repository
+    #   runAfter:
+    #     - parse-metadata
+    #   params:
+    #     - name: url
+    #       value: "$(tasks.parse-metadata.results.source-git-url)"
+    #     - name: revision
+    #       value: "$(tasks.parse-metadata.results.source-git-revision)"
+    #   taskRef:
+    #     name: git-clone
+    #   workspaces:
+    #   - name: output
+    #     workspace: source
 
     - name: run-e2e-tests
       runAfter:
@@ -141,15 +144,10 @@ spec:
       params:
         - name: namespace
           value: "$(params.NAMESPACE)"
-      workspaces:
-        - name: source
-          workspace: source
       taskSpec:
         params:
           - name: namespace
             type: string
-        workspaces:
-          - name: source
         volumes:
           - name: credentials
             emptyDir: {}
@@ -172,6 +170,16 @@ spec:
               - name: credentials
                 value: credentials
 
+
+          # XXX not supported to use workspaces in integration tests:
+          # * https://issues.redhat.com/browse/STONEINTG-895
+          - name: clone-repository
+            image: quay.io/konflux-ci/git-clone:latest
+            script: |
+              git clone "$(tasks.parse-metadata.results.source-git-url)" /workspace
+              pushd /workspace
+              git checkout "$(tasks.parse-metadata.results.source-git-revision)"
+
           - name: test
             image: registry.redhat.io/openshift4/ose-cli:latest
             env:
@@ -179,13 +187,13 @@ spec:
               value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
             - name: RAPIDAST_IMAGE
               value: $(results.tasks.parse-metadata.component-container-image)
-            workingDir: $(workspaces.source.path)
+            workingDir: /workspace
             volumeMounts:
               - name: credentials
                 mountPath: /credentials
             script: |
               #!/bin/bash
-              
+
               oc whoami
               oc get pods
               oc get ns $(params.namespace)
@@ -193,5 +201,3 @@ spec:
               python3 -m ensurepip
               pip install -r requirements.txt -r requirements-dev.txt
               pytest -v e2e-tests
-  workspaces:
-    - name: source
