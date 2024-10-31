@@ -175,6 +175,7 @@ spec:
           - name: clone-repository
             image: quay.io/konflux-ci/git-clone:latest
             script: |
+              git config --global --add safe.directory /workspace
               git clone "$(tasks.parse-metadata.results.source-git-url)" /workspace
               pushd /workspace
               git checkout "$(tasks.parse-metadata.results.source-git-revision)"
@@ -197,6 +198,7 @@ spec:
               oc get pods
               oc get ns $(params.namespace)
 
+              pwd
               python3 -m ensurepip
               pip install -r requirements.txt -r requirements-dev.txt
               pytest -v e2e-tests
