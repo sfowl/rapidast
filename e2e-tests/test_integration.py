@@ -14,6 +14,7 @@ from kubernetes.client.rest import ApiException
 
 NAMESPACE = os.getenv("NAMESPACE", "rapidast--pipeline")
 RAPIDAST_IMAGE = os.getenv("RAPIDAST_IMAGE", "quay.io/redhatproductsecurity/rapidast:latest")
+RAPIDAST_SECRETREF = os.getenv("RAPIDAST_SECRETREF", "pipeline")  # name of Secret used in rapidast pod
 
 MANIFESTS = "e2e-tests/manifests"
 
@@ -64,10 +65,12 @@ def tee_log(pod_name: str, filename: str):
 def render_manifests(input_dir, output_dir):
     shutil.copytree(input_dir, output_dir, dirs_exist_ok=True)
     print(f"rendering manifests in {output_dir}")
+    # XXX should probably replace this with something like kustomize
     for filepath in os.scandir(output_dir):
         with open(filepath, "r", encoding="utf-8") as f:
             contents = f.read()
         contents = contents.replace("${IMAGE}", RAPIDAST_IMAGE)
+        contents = contents.replace("${SECRET}", RAPIDAST_SECRETREF)
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(contents)
 

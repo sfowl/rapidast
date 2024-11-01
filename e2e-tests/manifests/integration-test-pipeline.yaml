@@ -67,58 +67,58 @@ spec:
         - name: ownerUid
           value: $(context.pipelineRun.uid)
 
-    - name: provision-cluster
-      runAfter:
-        - provision-eaas-space
-      taskSpec:
-        results:
-          - name: clusterName
-            value: "$(steps.create-cluster.results.clusterName)"
-        volumes:
-          - name: credentials
-            emptyDir: {}
-        steps:
-          - name: get-supported-versions
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/konflux-ci/build-definitions.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/eaas-get-supported-ephemeral-cluster-versions/0.1/eaas-get-supported-ephemeral-cluster-versions.yaml
-            params:
-              - name: eaasSpaceSecretRef
-                value: $(tasks.provision-eaas-space.results.secretRef)
-          - name: pick-version
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/konflux-ci/build-definitions.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
-            params:
-              - name: prefix
-                value: "$(steps.get-supported-versions.results.versions[0])."
-          - name: create-cluster
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/konflux-ci/build-definitions.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/eaas-create-ephemeral-cluster-hypershift-aws/0.1/eaas-create-ephemeral-cluster-hypershift-aws.yaml
-            params:
-              - name: eaasSpaceSecretRef
-                value: $(tasks.provision-eaas-space.results.secretRef)
-              - name: version
-                value: "$(steps.pick-version.results.version)"
+    # - name: provision-cluster
+    #   runAfter:
+    #     - provision-eaas-space
+    #   taskSpec:
+    #     results:
+    #       - name: clusterName
+    #         value: "$(steps.create-cluster.results.clusterName)"
+    #     volumes:
+    #       - name: credentials
+    #         emptyDir: {}
+    #     steps:
+    #       - name: get-supported-versions
+    #         ref:
+    #           resolver: git
+    #           params:
+    #             - name: url
+    #               value: https://github.com/konflux-ci/build-definitions.git
+    #             - name: revision
+    #               value: main
+    #             - name: pathInRepo
+    #               value: stepactions/eaas-get-supported-ephemeral-cluster-versions/0.1/eaas-get-supported-ephemeral-cluster-versions.yaml
+    #         params:
+    #           - name: eaasSpaceSecretRef
+    #             value: $(tasks.provision-eaas-space.results.secretRef)
+    #       - name: pick-version
+    #         ref:
+    #           resolver: git
+    #           params:
+    #             - name: url
+    #               value: https://github.com/konflux-ci/build-definitions.git
+    #             - name: revision
+    #               value: main
+    #             - name: pathInRepo
+    #               value: stepactions/eaas-get-latest-openshift-version-by-prefix/0.1/eaas-get-latest-openshift-version-by-prefix.yaml
+    #         params:
+    #           - name: prefix
+    #             value: "$(steps.get-supported-versions.results.versions[0])."
+    #       - name: create-cluster
+    #         ref:
+    #           resolver: git
+    #           params:
+    #             - name: url
+    #               value: https://github.com/konflux-ci/build-definitions.git
+    #             - name: revision
+    #               value: main
+    #             - name: pathInRepo
+    #               value: stepactions/eaas-create-ephemeral-cluster-hypershift-aws/0.1/eaas-create-ephemeral-cluster-hypershift-aws.yaml
+    #         params:
+    #           - name: eaasSpaceSecretRef
+    #             value: $(tasks.provision-eaas-space.results.secretRef)
+    #           - name: version
+    #             value: "$(steps.pick-version.results.version)"
 
     # XXX not supported to use workspaces in integration tests:
     # * https://issues.redhat.com/browse/STONEINTG-895
@@ -151,23 +151,23 @@ spec:
           - name: credentials
             emptyDir: {}
         steps:
-          - name: get-kubeconfig
-            ref:
-              resolver: git
-              params:
-                - name: url
-                  value: https://github.com/konflux-ci/build-definitions.git
-                - name: revision
-                  value: main
-                - name: pathInRepo
-                  value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
-            params:
-              - name: eaasSpaceSecretRef
-                value: $(tasks.provision-eaas-space.results.secretRef)
-              - name: clusterName
-                value: "$(tasks.provision-cluster.results.clusterName)"
-              - name: credentials
-                value: credentials
+          # - name: get-kubeconfig
+          #   ref:
+          #     resolver: git
+          #     params:
+          #       - name: url
+          #         value: https://github.com/konflux-ci/build-definitions.git
+          #       - name: revision
+          #         value: main
+          #       - name: pathInRepo
+          #         value: stepactions/eaas-get-ephemeral-cluster-credentials/0.1/eaas-get-ephemeral-cluster-credentials.yaml
+          #   params:
+          #     - name: eaasSpaceSecretRef
+          #       value: $(tasks.provision-eaas-space.results.secretRef)
+          #     - name: clusterName
+          #       value: "$(tasks.provision-cluster.results.clusterName)"
+          #     - name: credentials
+          #       value: credentials
 
 
           # XXX not supported to use workspaces in integration tests:
@@ -184,19 +184,29 @@ spec:
             image: registry.redhat.io/openshift4/ose-cli:latest
             env:
             - name: KUBECONFIG
-              value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+              value: /tmp/kubeconfig
+                # value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+            - name: KUBECONFIG_VALUE
+              valueFrom:
+                secretKeyRef:
+                  name: $(tasks.provision-eaas-space.results.secretRef)
+                  value: kubeconfig
             - name: RAPIDAST_IMAGE
               value: $(results.tasks.parse-metadata.component-container-image)
+            - name: RAPIDAST_SECRETREF
+              value: pipeline
             workingDir: /workspace
             volumeMounts:
               - name: credentials
                 mountPath: /credentials
             script: |
               #!/bin/bash
+              
+              echo "$KUBECONFIG_VALUE" > "$KUBECONFIG"
 
               oc whoami
               oc get pods
-              oc get ns $(params.namespace)
+              oc project
 
               pwd
               yum install -y python3.12
