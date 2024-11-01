@@ -203,6 +203,7 @@ spec:
               #!/bin/bash
               
               echo "$KUBECONFIG_VALUE" > "$KUBECONFIG"
+              cat "$KUBECONFIG"
 
               oc whoami
               oc get pods
