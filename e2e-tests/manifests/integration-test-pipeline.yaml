@@ -190,7 +190,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: $(tasks.provision-eaas-space.results.secretRef)
-                  value: kubeconfig
+                  key: kubeconfig
             - name: RAPIDAST_IMAGE
               value: $(results.tasks.parse-metadata.component-container-image)
             - name: RAPIDAST_SECRETREF
