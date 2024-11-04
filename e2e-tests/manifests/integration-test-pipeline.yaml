@@ -142,6 +142,9 @@ spec:
         volumes:
           - name: credentials
             emptyDir: {}
+        results:
+          - name: TEST_RESULTS
+            description: e2e test results
         steps:
           # - name: get-kubeconfig
           #   ref:
@@ -199,10 +202,10 @@ spec:
               #!/bin/bash -ex
               
               echo "$KUBECONFIG_VALUE" > "$KUBECONFIG"
-
               oc whoami
 
               yum install -y python3.12
               python3.12 -m ensurepip
               pip3 install -r requirements.txt -r requirements-dev.txt
-              pytest -s e2e-tests
+              pytest -s e2e-tests --json-report --json-report-summary --json-report-file $(results.TEST_RESULTS.path)
+              cat $(results.TEST_RESULTS.path)
