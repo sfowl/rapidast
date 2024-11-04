@@ -188,7 +188,7 @@ spec:
             - name: RAPIDAST_CLEANUP
               value: "false" # namespace will be cleanedup automatically
             - name: RAPIDAST_IMAGE
-              value: $(results.tasks.parse-metadata.component-container-image)
+              value: $(tasks.parse-metadata.results.component-container-image)
             - name: RAPIDAST_SERVICEACCOUNT
               value: namespace-manager # created by provision-env-with-ephemeral-namespace
             workingDir: /workspace
@@ -196,16 +196,12 @@ spec:
               - name: credentials
                 mountPath: /credentials
             script: |
-              #!/bin/bash
+              #!/bin/bash -ex
               
               echo "$KUBECONFIG_VALUE" > "$KUBECONFIG"
-              cat "$KUBECONFIG"
 
               oc whoami
-              oc get pods
-              oc project
 
-              pwd
               yum install -y python3.12
               python3.12 -m ensurepip
               pip3 install -r requirements.txt -r requirements-dev.txt
