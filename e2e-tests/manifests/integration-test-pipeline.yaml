@@ -29,10 +29,6 @@ spec:
             ]
           }'
       type: string
-    - description: Namespace where integration tests will run
-      name: NAMESPACE
-      default: default
-      type: string
 
   tasks:
     - name: parse-metadata
@@ -60,11 +56,13 @@ spec:
           - name: revision
             value: main
           - name: pathInRepo
-            value: task/eaas-provision-space/0.1/eaas-provision-space.yaml
+            value: task/provision-env-with-ephemeral-namespace/0.1/provision-env-with-ephemeral-namespace.yaml
       params:
-        - name: ownerName
+        - name: KONFLUXNAMESPACE
+          value: $(context.pipelineRun.namespace)
+        - name: PIPELINERUN_NAME
           value: $(context.pipelineRun.name)
-        - name: ownerUid
+        - name: PIPELINERUN_UID
           value: $(context.pipelineRun.uid)
 
     # - name: provision-cluster
@@ -140,13 +138,7 @@ spec:
     - name: run-e2e-tests
       runAfter:
         - provision-eaas-space
-      params:
-        - name: namespace
-          value: "$(params.NAMESPACE)"
       taskSpec:
-        params:
-          - name: namespace
-            type: string
         volumes:
           - name: credentials
             emptyDir: {}
