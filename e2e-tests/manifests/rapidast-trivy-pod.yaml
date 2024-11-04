@@ -22,7 +22,7 @@ spec:
     volumeMounts:
     - name: config-volume
       mountPath: /opt/rapidast/config
-  serviceAccountName: ${SECRET} # trivy needs perms to query API server
+  serviceAccountName: ${SERVICEACCOUNT} # trivy needs perms to query API server
   securityContext:
     supplementalGroups: [1000] # "dast" group, necessary to write to /opt/rapidast/results if no PVC mounted
   volumes:

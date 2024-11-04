@@ -189,8 +189,8 @@ spec:
               value: "false" # namespace will be cleanedup automatically
             - name: RAPIDAST_IMAGE
               value: $(results.tasks.parse-metadata.component-container-image)
-            - name: RAPIDAST_SECRETREF
-              value: pipeline
+            - name: RAPIDAST_SERVICEACCOUNT
+              value: namespace-manager # created by provision-env-with-ephemeral-namespace
             workingDir: /workspace
             volumeMounts:
               - name: credentials
