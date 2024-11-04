@@ -12,9 +12,11 @@ from kubernetes import utils
 from kubernetes import watch
 from kubernetes.client.rest import ApiException
 
-NAMESPACE = os.getenv("NAMESPACE", "rapidast--pipeline")
+NAMESPACE = os.getenv("RAPIDAST_NAMESPACE", "")  # e.g. rapidast--pipeline
 RAPIDAST_IMAGE = os.getenv("RAPIDAST_IMAGE", "quay.io/redhatproductsecurity/rapidast:latest")
 RAPIDAST_SECRETREF = os.getenv("RAPIDAST_SECRETREF", "pipeline")  # name of Secret used in rapidast pod
+# delete resources created by tests
+RAPIDAST_CLEANUP = os.getenv("RAPIDAST_CLEANUP", "True").lower() in ("true", "1", "t", "y", "yes")
 
 MANIFESTS = "e2e-tests/manifests"
 
@@ -31,11 +33,6 @@ certifi.where = where
 def fixture_kclient():
     config.load_config()
     yield client.ApiClient()
-
-
-@pytest.fixture(name="kclient")
-def fixture_corev1():
-    yield client.CoreV1Api()
 
 
 def wait_until_ready(**kwargs):
@@ -75,8 +72,40 @@ def render_manifests(input_dir, output_dir):
             f.write(contents)
 
 
+def setup_namespace():
+    global NAMESPACE
+    # only try to create a namespace if env is set
+    if NAMESPACE == "":
+        NAMESPACE = get_current_namespace()
+    else:
+        create_namespace(NAMESPACE)
+    print(f"using namespace '{NAMESPACE}'")
+
+
+def get_current_namespace() -> str:
+    try:
+        # Load the kubeconfig
+        config.load_config()
+
+        # Get the kube config object
+        _, active_context = config.list_kube_config_contexts()
+
+        # Return the namespace from current context
+        if active_context and "namespace" in active_context["context"]:
+            return active_context["context"]["namespace"]
+        return "default"
+
+    except config.config_exception.ConfigException:
+        # If running inside a pod
+        try:
+            with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "r") as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            return "default"
+
+
 def create_namespace(namespace_name: str):
-    config.load_kube_config()
+    config.load_config()
     corev1 = client.CoreV1Api()
     try:
         corev1.read_namespace(namespace_name)
@@ -92,24 +121,27 @@ def create_namespace(namespace_name: str):
         print(f"error reading namesapce {namespace_name}: {e}")
 
 
+def cleanup():
+    if RAPIDAST_CLEANUP:
+        os.system(f"kubectl delete -f {MANIFESTS}/")
+        # XXX oobtukbe does not clean up after itself
+        os.system("kubectl delete Task/vulnerable")
+
+
 class TestRapiDAST:
     @classmethod
     def setup_class(cls):
         cls.tempdir = tempfile.mkdtemp()
         render_manifests(MANIFESTS, cls.tempdir)
         print(f"testing with image: {RAPIDAST_IMAGE}")
-        create_namespace(NAMESPACE)
-        os.system(f"kubectl delete -f {MANIFESTS}/")
-        # XXX oobtukbe does not clean up after itself
-        os.system("kubectl delete Task/vulnerable")
+        setup_namespace()
+        cleanup()
 
     @classmethod
     def teardown_class(cls):
         # TODO teardown should really occur after each test, so the the
         # resource count does not grown until quota reached
-        os.system(f"kubectl delete -f {MANIFESTS}/")
-        # XXX oobtukbe does not clean up after itself
-        os.system("kubectl delete Task/vulnerable")
+        cleanup()
 
     def create_from_yaml(self, kclient, path: str):
         # simple wrapper to reduce repetition

@@ -177,12 +177,14 @@ spec:
             env:
             - name: KUBECONFIG
               value: /tmp/kubeconfig
-                # value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
+              # value: "/credentials/$(steps.get-kubeconfig.results.kubeconfig)"
             - name: KUBECONFIG_VALUE
               valueFrom:
                 secretKeyRef:
                   name: $(tasks.provision-eaas-space.results.secretRef)
                   key: kubeconfig
+            - name: RAPIDAST_CLEANUP
+              value: false # namespace will be cleanedup automatically
             - name: RAPIDAST_IMAGE
               value: $(results.tasks.parse-metadata.component-container-image)
             - name: RAPIDAST_SECRETREF
