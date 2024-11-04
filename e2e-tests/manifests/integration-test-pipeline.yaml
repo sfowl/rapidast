@@ -184,7 +184,7 @@ spec:
                   name: $(tasks.provision-eaas-space.results.secretRef)
                   key: kubeconfig
             - name: RAPIDAST_CLEANUP
-              value: false # namespace will be cleanedup automatically
+              value: "false" # namespace will be cleanedup automatically
             - name: RAPIDAST_IMAGE
               value: $(results.tasks.parse-metadata.component-container-image)
             - name: RAPIDAST_SECRETREF
